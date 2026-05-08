@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Recipe to Notion</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .meal-card { border: 1px solid #ddd; border-radius: 8px; padding: 20px; margin: 20px 0; background: #fefefe; }
+        .meal-card img { border-radius: 8px; }
+        .auth-status { padding: 10px; margin-bottom: 20px; background: #fff3cd; }
+    </style>
+</head>
+<body>
+    <h1>🍳 Save Recipes to Notion</h1>
+    <div class="auth-status">
+        <p><strong>Step 1:</strong> <a href="/login">Login with Notion</a> (required before searching)</p>
+    </div>
+    <form action="/search" method="GET">
+        <label for="meal_name">Dish name:</label><br>
+        <input type="text" id="meal_name" name="meal_name" placeholder="e.g. Chicken Tikka Masala" required style="width:300px; padding:8px; margin:10px 0;">
+        <br>
+        <button type="submit" style="padding:10px 20px; background:#2e7d32; color:white; border:none; border-radius:4px;">Search & Save</button>
+    </form>
+</body>
+</html>
