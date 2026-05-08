@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Recipe Bookmark</title>
+</head>
+<body>
+    <!-- 1. 连接 Notion 按钮 -->
+    <a href="https://api.notion.com/v1/oauth/authorize?client_id=你的CLIENT_ID&response_type=code&owner=user&redirect_uri=http%3A%2F%2Flocalhost%3A3000%2Fauth%2Fnotion%2Fcallback">
+        <button>1. Connect to Notion</button>
+    </a>
+
+    <!-- 2. 搜索功能 -->
+    <input type="text" id="searchInput" placeholder="Search recipe (e.g., chicken)">
+    <button onclick="searchRecipe()">2. Search</button>
+
+    <div id="recipeResult"></div>
+
+    <script>
+        let currentRecipe = null;
+
+        // 步骤一：从 TheMealDB 获取数据（无需后端，前端直接调）
+        async function searchRecipe() {
+            const query = document.getElementById('searchInput').value;
+            const res = await fetch(`https://www.themealdb.com/api/json/v1/1/search.php?s=${query}`);
+            const data = await res.json();
+            
+            if (data.meals) {
+                const meal = data.meals[0]; // 简单起见，取第一个结果
+                currentRecipe = {
+                    mealName: meal.strMeal,
+                    category: meal.strCategory,
+                    instructions: meal.strInstructions,
+                    imageUrl: meal.strMealThumb,
+                    youtubeUrl: meal.strYoutube
+                };
+                
+                document.getElementById('recipeResult').innerHTML = `
+                    <h3>${meal.strMeal}</h3>
+                    <img src="${meal.strMealThumb}" width="200" />
+                    <p>Category: ${meal.strCategory}</p>
+                    <button onclick="saveToNotion()">3. Save to my Notion</button>
+                `;
+            }
+        }
+
+        // 步骤二：发送给后端，写入 Notion
+        async function saveToNotion() {
+            const res = await fetch('http://localhost:3000/api/save-recipe', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(currentRecipe)
+            });
+            const result = await res.json();
+            
+            if (result.success) {
+                alert('成功保存到 Notion！');
+                window.open(result.url, '_blank'); // 打开刚刚创建的 Notion 页面
+            } else {
+                alert(result.error);
+            }
+        }
+    </script>
+</body>
+</html>
