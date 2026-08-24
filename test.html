@@ -1,0 +1,496 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>答题库</title>
+    <style>
+        /* ===== 样式 ===== */
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            background: #f9f6f0; color: #2d1e12;
+            padding: 1.5rem 1rem; min-height: 100vh;
+            display: flex; justify-content: center; align-items: flex-start;
+        }
+        .container {
+            max-width: 860px; width:100%;
+            background: #fffcf8; border-radius: 32px;
+            box-shadow: 0 12px 40px rgba(166,83,41,0.10);
+            padding: 2rem 2rem 2.5rem;
+        }
+        @media (max-width:500px) { .container { padding:1.5rem 1.25rem; } }
+        header { margin-bottom:1.5rem; }
+        .eyebrow { font-size:0.75rem; text-transform:uppercase; letter-spacing:0.08em; color:#a65329; font-weight:600; margin-bottom:0.25rem; }
+        h1 { font-size:2.2rem; font-weight:700; color:#3d2415; letter-spacing:-0.02em; line-height:1.1; }
+        .toolbar {
+            display: flex; gap: 0.75rem; flex-wrap: wrap;
+            margin: 1rem 0 1rem; align-items: center;
+        }
+        .btn {
+            padding: 0.6rem 1.4rem; border: none; border-radius: 60px; font-weight: 600;
+            font-size: 0.95rem; cursor: pointer; transition: 0.2s;
+            background: #a65329; color: #fff; display: inline-flex; align-items: center; gap: 0.3rem;
+        }
+        .btn:hover { background: #8f4522; transform: scale(0.97); }
+        .btn-outline { background: transparent; border: 1.5px solid #a65329; color: #a65329; }
+        .btn-outline:hover { background: #a65329; color: #fff; }
+        .btn-secondary { background: #ede7e1; color: #3d2415; }
+        .btn-secondary:hover { background: #dfd6cd; }
+        .search-row {
+            display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1.5rem;
+        }
+        .search-row input {
+            flex: 1 1 200px; padding: 0.7rem 1rem; border: 2px solid #e5d9d0; border-radius: 60px;
+            font-size: 1rem; background: #fffcf8; outline: none; color: #2d1e12; min-width: 140px;
+        }
+        .search-row input:focus { border-color: #a65329; box-shadow: 0 0 0 4px rgba(166,83,41,0.12); }
+        .search-row input::placeholder { color: #b8a89b; }
+        .add-panel {
+            margin: 1rem 0 1.5rem; padding: 1.5rem 1.8rem; background: #f5efe9; border-radius: 24px;
+            border: 1px solid #e5d9d0; transition: 0.25s ease;
+        }
+        .add-panel.hidden { display: none; }
+        .add-panel h2 { font-size:1.2rem; font-weight:600; color:#3d2415; margin-bottom:1rem; }
+        .add-panel label { display:block; font-weight:500; font-size:0.9rem; color:#4d3425; margin-top:1rem; margin-bottom:0.3rem; }
+        .add-panel textarea {
+            width:100%; padding:0.7rem 1rem; border:2px solid #ddd0c6; border-radius:16px;
+            font-size:0.95rem; font-family:inherit; background:#fffcf8; resize:vertical; outline:none; color:#2d1e12;
+        }
+        .add-panel textarea:focus { border-color:#a65329; box-shadow:0 0 0 4px rgba(166,83,41,0.08); }
+        .form-actions { display:flex; gap:0.75rem; margin-top:1.2rem; flex-wrap:wrap; }
+        .results-heading {
+            display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:0.5rem;
+            border-bottom:2px solid #ede7e1; padding-bottom:0.6rem; margin-top:1.5rem;
+        }
+        .results-heading h2 { font-size:1.2rem; font-weight:600; color:#3d2415; }
+        .results-heading #count {
+            font-size:0.9rem; color:#8a6f5b; background:#ede7e1;
+            padding:0.15rem 0.9rem; border-radius:60px; font-weight:500;
+        }
+        .message { margin:0.8rem 0 0.5rem; color:#6b4c38; font-size:0.95rem; min-height:1.6rem; }
+        #results-list { margin-top:1rem; display:flex; flex-direction:column; gap:0.8rem; }
+        .result-item {
+            background:#fcf8f4; border:1px solid #ede7e1; border-radius:20px;
+            padding:1.2rem 1.5rem; transition:0.15s;
+        }
+        .result-item:hover { border-color:#dccfc4; background:#faf5f0; }
+        .result-item .q { font-weight:600; color:#2d1e12; font-size:1rem; line-height:1.4; }
+        .result-item .a { margin-top:0.4rem; color:#4d3425; font-size:0.95rem; line-height:1.5; }
+        .result-item .a strong { color:#a65329; font-weight:600; }
+        .result-item .badge {
+            display:inline-block; margin-top:0.5rem; font-size:0.7rem; text-transform:uppercase;
+            letter-spacing:0.04em; color:#8a6f5b; background:#ede7e1; padding:0.1rem 0.8rem; border-radius:60px;
+        }
+        .empty-state { text-align:center; padding:3rem 1rem; color:#b8a89b; }
+        .empty-state span { font-size:2.4rem; display:block; margin-bottom:0.5rem; }
+        .status-bar {
+            margin-top:2rem; padding-top:1rem; border-top:1px solid #ede7e1;
+            font-size:0.8rem; color:#8a6f5b; display:flex; justify-content:space-between; flex-wrap:wrap; gap:0.5rem;
+        }
+        .db-dot { display:inline-block; width:8px; height:8px; border-radius:50%; background:#b8a89b; margin-right:4px; }
+        .db-dot.on { background:#2b8c5e; }
+        .sr-only { position:absolute !important; width:1px !important; height:1px !important; padding:0 !important; margin:-1px !important; overflow:hidden !important; clip:rect(0,0,0,0) !important; border:0 !important; }
+        #file-input { display:none; }
+        .file-label { cursor:pointer; }
+        .hidden { display:none !important; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <p class="eyebrow">📚 本机题库</p>
+        <h1>答题库</h1>
+    </header>
+
+    <!-- 工具栏 -->
+    <div class="toolbar">
+        <button class="btn file-label" id="load-btn">📂 选择 quiz.db</button>
+        <input type="file" id="file-input" accept=".db, .sqlite, .sqlite3">
+        <button class="btn btn-outline" id="export-btn" disabled>💾 导出</button>
+        <button class="btn btn-secondary" id="open-add" disabled>＋ 添加</button>
+    </div>
+
+    <!-- 搜索栏（输入即搜索） -->
+    <div class="search-row">
+        <input id="keyword" placeholder="输入关键字即时搜索…" autocomplete="off" disabled>
+    </div>
+
+    <!-- 添加面板 -->
+    <section id="add-panel" class="add-panel hidden">
+        <h2>✏️ 添加新题目</h2>
+        <form id="add-form">
+            <label for="question">题目</label>
+            <textarea id="question" rows="3" maxlength="500" required></textarea>
+            <label for="answer">正确答案</label>
+            <textarea id="answer" rows="2" maxlength="500" required></textarea>
+            <div class="form-actions">
+                <button type="submit" class="btn">保存</button>
+                <button type="button" id="close-add" class="btn btn-secondary">取消</button>
+            </div>
+        </form>
+    </section>
+
+    <!-- 结果 -->
+    <div class="results-heading">
+        <h2>📖 题目结果</h2>
+        <span id="count">0 条</span>
+    </div>
+    <p id="message" class="message"></p>
+    <div id="results-list">
+        <div class="empty-state"><span>📂</span><p>请加载数据库</p></div>
+    </div>
+
+    <div class="status-bar">
+        <span><span class="db-dot" id="dbDot"></span><span id="dbLabel">未加载</span></span>
+        <span id="totalCount">共 0 条</span>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.js">
+</script>
+<script>
+    (function() {
+        'use strict';
+
+        // DOM 引用
+        const fileInput = document.getElementById('file-input');
+        const loadBtn = document.getElementById('load-btn');
+        const exportBtn = document.getElementById('export-btn');
+        const openAddBtn = document.getElementById('open-add');
+        const keywordInput = document.getElementById('keyword');
+        const resultsList = document.getElementById('results-list');
+        const countEl = document.getElementById('count');
+        const messageEl = document.getElementById('message');
+        const totalCountEl = document.getElementById('totalCount');
+        const dbDot = document.getElementById('dbDot');
+        const dbLabel = document.getElementById('dbLabel');
+        const addPanel = document.getElementById('add-panel');
+        const closeAddBtn = document.getElementById('close-add');
+        const addForm = document.getElementById('add-form');
+        const questionTA = document.getElementById('question');
+        const answerTA = document.getElementById('answer');
+
+        let db = null;
+        let allQuestions = [];
+        let isDbLoaded = false;
+
+        // ---------- 工具 ----------
+        function setStatus(ok, label) {
+            dbDot.className = 'db-dot';
+            if (ok) {
+                dbDot.classList.add('on');
+                dbLabel.textContent = label || '已加载';
+            } else {
+                dbLabel.textContent = label || '未加载';
+            }
+        }
+
+        function enableUI(enabled) {
+            [exportBtn, openAddBtn, keywordInput].forEach(el => el.disabled = !enabled);
+            if (enabled) {
+                keywordInput.placeholder = '输入关键字即时搜索…';
+            } else {
+                keywordInput.placeholder = '请先加载数据库';
+            }
+        }
+
+        function refreshCache() {
+            if (!db) return;
+            const stmt = db.prepare("SELECT id, question, answer, created_at FROM questions ORDER BY id");
+            const rows = [];
+            while (stmt.step()) {
+                const row = stmt.getAsObject();
+                rows.push({
+                    id: row.id,
+                    question: row.question || '',
+                    answer: row.answer || '',
+                    created_at: row.created_at || null
+                });
+            }
+            stmt.free();
+            allQuestions = rows;
+            totalCountEl.textContent = `共 ${allQuestions.length} 条`;
+        }
+
+        // ---------- 加载数据库 ----------
+        async function loadDatabaseFromBuffer(buffer) {
+            try {
+                const SQL = await initSqlJs({
+                    locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/${file}`
+                });
+                const u8 = new Uint8Array(buffer);
+                db = new SQL.Database(u8);
+
+                // 检查表
+                const tableCheck = db.exec("SELECT name FROM sqlite_master WHERE type='table' AND name='questions'");
+                if (!tableCheck || tableCheck.length === 0 || tableCheck[0].values.length === 0) {
+                    throw new Error('数据库中不存在表 "questions"');
+                }
+                const pragma = db.exec("PRAGMA table_info(questions)");
+                const columns = pragma[0].values.map(row => row[1]);
+                const required = ['id', 'question', 'answer'];
+                const missing = required.filter(c => !columns.includes(c));
+                if (missing.length > 0) {
+                    throw new Error(`表 questions 缺少字段: ${missing.join(', ')}`);
+                }
+
+                isDbLoaded = true;
+                refreshCache();
+                setStatus(true, `✅ ${allQuestions.length} 条`);
+                enableUI(true);
+                messageEl.textContent = `已加载 ${allQuestions.length} 条题目`;
+                performSearch('');
+            } catch (err) {
+                console.error(err);
+                isDbLoaded = false;
+                setStatus(false, '加载失败');
+                enableUI(false);
+                messageEl.textContent = `❌ 加载失败: ${err.message}`;
+                resultsList.innerHTML = `
+                    <div class="empty-state">
+                        <span>⚠️</span>
+                        <p>文件无效或表结构不正确</p>
+                        <p style="font-size:0.85rem;color:#8a6f5b;">请确保选择正确的 SQLite 数据库，且包含表 questions</p>
+                    </div>
+                `;
+                countEl.textContent = '0 条';
+                totalCountEl.textContent = '共 0 条';
+            }
+        }
+
+        // ---------- 自动加载（仅 http/https） ----------
+        async function tryAutoLoad() {
+            try {
+                const response = await fetch('quiz.db');
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const arrayBuffer = await response.arrayBuffer();
+                await loadDatabaseFromBuffer(arrayBuffer);
+            } catch (err) {
+                console.warn('自动加载失败:', err.message);
+                messageEl.textContent = '⚠️ 自动加载失败，请手动选择 quiz.db';
+                resultsList.innerHTML = `
+                    <div class="empty-state">
+                        <span>📂</span>
+                        <p>请手动选择 quiz.db 文件</p>
+                        <p style="font-size:0.85rem;color:#8a6f5b;">点击上方按钮选择文件</p>
+                    </div>
+                `;
+                setStatus(false, '未加载');
+                enableUI(false);
+            }
+        }
+
+        // ---------- 手动选择 ----------
+        async function handleFile(file) {
+            if (!file.name.match(/\.(db|sqlite|sqlite3)$/i)) {
+                messageEl.textContent = '⚠️ 请选择 .db / .sqlite / .sqlite3 文件';
+                return;
+            }
+            const arrayBuffer = await file.arrayBuffer();
+            await loadDatabaseFromBuffer(arrayBuffer);
+        }
+
+        // ---------- 搜索（实时） ----------
+        function performSearch(keyword) {
+            if (!isDbLoaded) {
+                resultsList.innerHTML = `<div class="empty-state"><span>📂</span><p>请先加载数据库</p></div>`;
+                countEl.textContent = '0 条';
+                return;
+            }
+            const kw = keyword.trim().toLowerCase();
+            let results = [];
+            if (kw === '') {
+                results = allQuestions.slice(0, 200);
+            } else {
+                results = allQuestions.filter(item => {
+                    const q = (item.question || '').toLowerCase();
+                    const a = (item.answer || '').toLowerCase();
+                    return q.includes(kw) || a.includes(kw);
+                });
+            }
+            renderResults(results, kw);
+        }
+
+        function renderResults(results, keyword) {
+            const total = results.length;
+            countEl.textContent = `${total} 条`;
+
+            if (total === 0) {
+                resultsList.innerHTML = `
+                    <div class="empty-state">
+                        <span>🔍</span>
+                        <p>没有匹配的题目</p>
+                        <p style="font-size:0.85rem;color:#8a6f5b;">试试其他关键词</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const kw = keyword.trim().toLowerCase();
+            let html = '';
+            for (const item of results) {
+                let qDisplay = escapeHtml(item.question || '');
+                let aDisplay = escapeHtml(item.answer || '');
+                if (kw) {
+                    qDisplay = highlightText(qDisplay, kw);
+                    aDisplay = highlightText(aDisplay, kw);
+                }
+                const createdAt = item.created_at ? new Date(item.created_at).toLocaleString() : '未知';
+                html += `
+                    <div class="result-item">
+                        <div class="q">${qDisplay}</div>
+                        <div class="a"><strong>✅ 答案：</strong>${aDisplay}</div>
+                        <div class="badge">#${item.id} · ${createdAt}</div>
+                    </div>
+                `;
+            }
+            resultsList.innerHTML = html;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function highlightText(text, keyword) {
+            if (!keyword) return text;
+            const idx = text.toLowerCase().indexOf(keyword);
+            if (idx === -1) return text;
+            const before = text.substring(0, idx);
+            const matched = text.substring(idx, idx + keyword.length);
+            const after = text.substring(idx + keyword.length);
+            return `${before}<mark style="background:#f5d4b8;padding:0 0.1rem;border-radius:4px;">${matched}</mark>${after}`;
+        }
+
+        // ---------- 添加题目 ----------
+        function addQuestion(question, answer) {
+            const q = question.trim();
+            const a = answer.trim();
+            if (!q || !a) {
+                messageEl.textContent = '⚠️ 题目和答案都不能为空';
+                return false;
+            }
+            if (!isDbLoaded || !db) {
+                messageEl.textContent = '⚠️ 数据库未加载';
+                return false;
+            }
+
+            try {
+                const now = new Date().toISOString().replace('T', ' ').slice(0, 19);
+                db.run("INSERT INTO questions (question, answer, created_at) VALUES (?, ?, ?)", [q, a, now]);
+                const result = db.exec("SELECT last_insert_rowid()");
+                let newId = (result && result[0] && result[0].values && result[0].values[0]) ? result[0].values[0][0] :
+                    null;
+                if (newId === null) {
+                    const maxId = allQuestions.reduce((max, item) => Math.max(max, item.id || 0), 0);
+                    newId = maxId + 1;
+                }
+                const newItem = { id: newId, question: q, answer: a, created_at: now };
+                allQuestions.push(newItem);
+                totalCountEl.textContent = `共 ${allQuestions.length} 条`;
+                messageEl.textContent = `✅ 已添加 #${newId}`;
+                performSearch(keywordInput.value.trim());
+                return true;
+            } catch (err) {
+                console.error(err);
+                messageEl.textContent = `⚠️ 添加失败: ${err.message}`;
+                return false;
+            }
+        }
+
+        // ---------- 导出 ----------
+        function exportDatabase() {
+            if (!db) {
+                alert('没有可导出的数据库');
+                return;
+            }
+            try {
+                const data = db.export();
+                const blob = new Blob([data], { type: 'application/x-sqlite3' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'quiz.db';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                messageEl.textContent = '✅ 数据库已导出为 quiz.db';
+            } catch (err) {
+                alert('导出失败: ' + err.message);
+            }
+        }
+
+        // ---------- 事件绑定 ----------
+        // 文件选择
+        loadBtn.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', function(e) {
+            if (this.files.length === 0) return;
+            handleFile(this.files[0]);
+            this.value = '';
+        });
+
+        // 实时搜索（输入即搜）
+        keywordInput.addEventListener('input', function() {
+            performSearch(this.value);
+        });
+
+        // 添加面板
+        openAddBtn.addEventListener('click', () => {
+            addPanel.classList.remove('hidden');
+            questionTA.focus();
+        });
+        closeAddBtn.addEventListener('click', () => {
+            addPanel.classList.add('hidden');
+            questionTA.value = '';
+            answerTA.value = '';
+        });
+        addForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const ok = addQuestion(questionTA.value, answerTA.value);
+            if (ok) {
+                questionTA.value = '';
+                answerTA.value = '';
+                addPanel.classList.add('hidden');
+            }
+        });
+        document.addEventListener('click', (e) => {
+            if (!addPanel.classList.contains('hidden')) {
+                const isInside = addPanel.contains(e.target) || openAddBtn.contains(e.target);
+                if (!isInside) {
+                    addPanel.classList.add('hidden');
+                    questionTA.value = '';
+                    answerTA.value = '';
+                }
+            }
+        });
+
+        exportBtn.addEventListener('click', exportDatabase);
+
+        // ---------- 启动 ----------
+        if (window.location.protocol === 'file:') {
+            // file:// 直接手动
+            messageEl.textContent = '💡 请点击“选择 quiz.db”导入';
+            resultsList.innerHTML = `
+                <div class="empty-state">
+                    <span>📂</span>
+                    <p>请选择本地的 quiz.db 文件</p>
+                </div>
+            `;
+            setStatus(false, '未加载');
+            enableUI(false);
+        } else {
+            // http/https 尝试自动
+            messageEl.textContent = '⏳ 正在尝试自动加载 quiz.db …';
+            resultsList.innerHTML = `<div class="empty-state"><span>⏳</span><p>加载中…</p></div>`;
+            setStatus(false, '加载中');
+            enableUI(false);
+            tryAutoLoad();
+        }
+    })();
+</script>
+</body>
+</html>
